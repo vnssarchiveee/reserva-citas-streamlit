@@ -7,8 +7,8 @@ def obtener_conexion():
         user=st.secrets["mysql"]["user"],
         password=st.secrets["mysql"]["password"],
         database=st.secrets["mysql"]["database"],
-        port=int(st.secrets["mysql"]["port"])
-        
+        port=int(st.secrets["mysql"]["port"]),
+        use_pure=True
     )
 
 def buscar_paciente(dni):
