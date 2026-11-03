@@ -3,8 +3,9 @@ from control_de_la_sesion import ir_a
 from bd_connector import buscar_paciente, registrar_paciente, obtener_especialidades
 from ia_gemini_helper import recomendar_especialidad_ia
 
-especialidades = obtener_especialidades()
+
 def caso_normal():
+             especialidades = obtener_especialidades()
              st.subheader("🤖 Triaje Asistido por Inteligencia Artificial")
              st.write("Describe los síntomas o el malestar que presentas:")
              
