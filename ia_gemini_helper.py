@@ -23,7 +23,7 @@ def recomendar_especialidad_ia(sintomas, lista_especialidades):
     """
     try:
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=prompt,
         )
         sugerencia = response.text.strip()
