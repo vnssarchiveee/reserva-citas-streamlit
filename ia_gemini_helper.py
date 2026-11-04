@@ -45,7 +45,7 @@ def recomendar_especialidad_ia(sintomas, lista_especialidades):
 
     try:
         response = cliente.models.generate_content(
-            model='gemini-2.0-flash',  # Modelo rápido y estable
+            model='gemini-2.5-flash',  # Modelo rápido y estable
             contents=prompt,
         )
         sugerencia_raw = response.text.strip()
