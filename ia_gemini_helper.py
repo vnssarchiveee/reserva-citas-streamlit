@@ -1,35 +1,62 @@
+import re
+import unicodedata
 import streamlit as st
 from google import genai
-from bd_connector import obtener_especialidades
 
 def obtener_cliente_ia():
     try:
-        return genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    except Exception:
-        return None
-client = obtener_cliente_ia()
+        api_key = st.secrets.get("GEMINI_API_KEY")
+        if api_key:
+            return genai.Client(api_key=api_key)
+    except Exception as e:
+        st.error(f"Error cliente Gemini: {e}")
+    return None
+
+def normalizar_texto(texto):
+    """Elimina tildes, mayúsculas, comillas, asteriscos y puntos finales."""
+    texto = texto.lower().strip()
+    texto = re.sub(r'[*"\'.]', '', texto)  # Elimina *, ", ', .
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', texto)
+        if unicodedata.category(c) != 'Mn'
+    )
 
 def recomendar_especialidad_ia(sintomas, lista_especialidades):
-    if not sintomas.strip() or not client:
-        return "Medicina General" if "Medicina General" in lista_especialidades else lista_especialidades[0]
-        
-    prompt = f"""
-    Eres un asistente médico de triaje. 
-    El paciente describe sus síntomas: "{sintomas}"
+    cliente = obtener_cliente_ia()
     
-    De esta lista exacta de especialidades disponibles en el centro médico: {lista_especialidades}
-    Responde ÚNICAMENTE con el nombre exacto de la especialidad más adecuada de la lista.
-    No agregues introducciones, ni explicaciones, ni puntos finales. Solo el nombre de la especialidad.
+    if not sintomas.strip() or not cliente or not lista_especialidades:
+        return "Medicina General" if "Medicina General" in lista_especialidades else lista_especialidades[0]
+
+    prompt = f"""
+    Eres un asistente de triaje médico.
+    El paciente dice: "{sintomas}"
+
+    Especialidades disponibles: {', '.join(lista_especialidades)}
+
+    Mapeo de intenciones habituales:
+    - Comer bien, dietas, bajar/subir de peso, nutrición -> Nutrición
+    - Dolor de cabeza, fiebre, malestar general -> Medicina General
+    - Ansiedad, estrés, salud mental -> Psicología
+    - Niños, bebés -> Pediatría
+    - Oído, nariz, garganta -> Otorrinolaringología
+
+    Responde ÚNICAMENTE con el nombre exacto de la especialidad correspondiente de la lista.
     """
+
     try:
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
+        response = cliente.models.generate_content(
+            model='gemini-2.0-flash',  # Modelo rápido y estable
             contents=prompt,
         )
-        sugerencia = response.text.strip()
-        if sugerencia in lista_especialidades:
-            return sugerencia
-    except Exception:
-        pass
+        sugerencia_raw = response.text.strip()
+        sugerencia_norm = normalizar_texto(sugerencia_raw)
         
+        # Comparación flexible ignorando mayúsculas, tildes y símbolos
+        for esp in lista_especialidades:
+            if normalizar_texto(esp) == sugerencia_norm or normalizar_texto(esp) in sugerencia_norm:
+                return esp
+
+    except Exception as e:
+        st.warning(f"Aviso de IA: {e}")
+
     return "Medicina General" if "Medicina General" in lista_especialidades else lista_especialidades[0]
