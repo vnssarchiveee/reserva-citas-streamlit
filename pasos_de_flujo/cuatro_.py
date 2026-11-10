@@ -33,60 +33,119 @@ def caso_normal():
              if col2.button("Continuar a Especialidad →", type="primary", use_container_width=True):
                  ir_a(4)
      
-
 def caso_urgente():
-        st.subheader("🚨 Evaluador de Gravedad y Urgencia")
-        st.write("Responde las siguientes preguntas para evaluar tu nivel de urgencia:")
-        
-        dolor = st.slider("1. Nivel de dolor actual (1 al 10):", min_value=1, max_value=10, value=1)
-        duracion = st.radio(
-            "2. ¿Hace cuánto iniciaron los síntomas principales?",
-            ["Hace más de una semana", "Entre 2 y 7 días", "En las últimas 24 horas"]
-        )
-        
-        st.write("3. Marca si presentas síntomas adicionales:")
-        s_respiratorio = st.checkbox("Dificultad severa para respirar (+25 pts)")
-        s_fiebre = st.checkbox("Fiebre alta persistente superior a 38.5 °C (+20 pts)")
-        s_trauma = st.checkbox("Incapacidad para moverse o traumatismo reciente (+20 pts)")
-        
-        pts = dolor * 4
-        if duracion == "En las últimas 24 horas": pts += 20
-        elif duracion == "Entre 2 y 7 días": pts += 10
-        if s_respiratorio: pts += 25
-        if s_fiebre: pts += 20
-        if s_trauma: pts += 20
-        
+    st.subheader("🚨 Evaluador de Urgencia")
+    st.write(
+        "Responde las siguientes preguntas (escala del 1 al 5) para evaluar tu nivel de urgencia:"
+    )
+
+    # Preguntas en escala de 1 a 5
+    dolor = st.slider(
+        "1. ¿Qué tan fuerte es su dolor o molestia ahora?",
+        min_value=1,
+        max_value=5,
+        value=1,
+        help="1 = Casi no lo siento | 5 = Es muy fuerte",
+    )
+
+    actividades = st.slider(
+        "2. ¿Qué tanto le impide hacer sus actividades diarias (trabajar, estudiar, dormir, comer)?",
+        min_value=1,
+        max_value=5,
+        value=1,
+        help="1 = Nada | 5 = No puedo hacer nada",
+    )
+
+    empeoramiento = st.slider(
+        "3. ¿Qué tan rápido han empeorado sus síntomas desde que empezaron?",
+        min_value=1,
+        max_value=5,
+        value=1,
+        help="1 = Siguen igual | 5 = Empeoran cada hora",
+    )
+
+    preocupacion = st.slider(
+        "4. ¿Qué tanto le preocupa su estado de salud en este momento?",
+        min_value=1,
+        max_value=5,
+        value=1,
+        help="1 = Nada | 5 = Muchísimo",
+    )
+
+    # Cálculo del puntaje total (Rango: 4 a 20 puntos)
+    pts = dolor + actividades + empeoramiento + preocupacion
+
+    # CASO 1: CONSULTA NORMAL (4 a 8 pts)
+    if 4 <= pts <= 8:
+        nivel = "Consulta normal"
         st.session_state.puntaje_urgencia = pts
-        st.session_state.sintomas = f"Caso de Urgencia (Triaje: {pts} pts)"
-        
-        # CASO 1: URGENCIA ALTA (> 70 pts)
-        if pts > 70:
-            st.error(f"🚨 **CASO URGENTE DETECTADO** ({pts} / 125 pts)")
-            st.info("Su puntaje requiere atención prioritaria de emergencia.")
+        st.session_state.sintomas = (
+            f"Caso de Urgencia (Triaje: {pts} pts - {nivel})"
+        )
 
-            col1, col2 = st.columns(2)
-            if col1.button("← Volver"):
-                ir_a(2)
-            if col2.button("Continuar a Especialidad →", type="primary", use_container_width=True):
-                ir_a(4)
+        st.info(
+            f"ℹ️ **Puntaje: {pts}/20 — {nivel}**\n\n"
+            "Su estado no requiere atención inmediata. Se agendará una cita en la fecha disponible."
+        )
 
-        # CASO 2: PRIORIDAD BAJA O MODERADA (<= 70 pts)
-        else:
-            st.warning(f"ℹ️ **Nivel de prioridad bajo/moderado ({pts} / 125 pts)**")
-            st.info(
-                "Su estado no requiere atención de emergencia inmediata. "
-                "Por favor, solicite una **Cita Normal** para ser atendido en consultorio por un especialista."
-            )
+        col1, col2 = st.columns(2)
+        if col1.button("← Volver"):
+            ir_a(2)
+        if col2.button(
+            "📅 Ir a Cita Normal", type="primary", use_container_width=True
+        ):
+            st.session_state.modo = "Normal"
+            ir_a(2)
 
-            col1, col2 = st.columns(2)
-            if col1.button("← Volver"):
-                ir_a(2)
-            if col2.button("📅 Ir a Cita Normal", type="primary", use_container_width=True):
-                st.session_state.modo = "Normal"  # Cambia a modo Cita Normal
-                ir_a(2)                           # Redirige de vuelta a Selección de Modalidad
+    # CASO 2: URGENCIA LEVE (9 a 14 pts)
+    elif 9 <= pts <= 14:
+        nivel = "Urgencia leve"
+        st.session_state.puntaje_urgencia = pts
+        st.session_state.sintomas = (
+            f"Caso de Urgencia (Triaje: {pts} pts - {nivel})"
+        )
+
+        st.warning(
+            f"⚠️ **Puntaje: {pts}/20 — {nivel}**\n\n"
+            "Se requiere una cita prioritaria en los próximos días."
+        )
+
+        col1, col2 = st.columns(2)
+        if col1.button("← Volver"):
+            ir_a(2)
+        if col2.button(
+            "Continuar a Especialidad →",
+            type="primary",
+            use_container_width=True,
+        ):
+            ir_a(4)
+
+    # CASO 3: URGENCIA ALTA (15 a 20 pts)
+    else:
+        nivel = "Urgencia alta"
+        st.session_state.puntaje_urgencia = pts
+        st.session_state.sintomas = (
+            f"Caso de Urgencia (Triaje: {pts} pts - {nivel})"
+        )
+
+        st.error(
+            f"🚨 **Puntaje: {pts}/20 — {nivel}**\n\n"
+            "Atención requerida el mismo día o en el primer horario libre."
+        )
+
+        col1, col2 = st.columns(2)
+        if col1.button("← Volver"):
+            ir_a(2)
+        if col2.button(
+            "Continuar a Especialidad →",
+            type="primary",
+            use_container_width=True,
+        ):
+            ir_a(4)
+
 
 def mostrar_triaje():
     if st.session_state.modo == "Normal":
         caso_normal()
     else:
-         caso_urgente()
+        caso_urgente()
